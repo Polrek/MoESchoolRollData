@@ -25,6 +25,9 @@ RESOURCE_ID = "4b292323-9fcc-41f8-814b-3c7b19cf14b3"
 # Columns that should be treated as numeric for proper sorting/calculation
 NUMERIC_COLUMNS = ["School_Id"]
 
+# Column type mappings (all columns default to string if not specified here)
+COLUMN_TYPES = {col: "numeric" for col in NUMERIC_COLUMNS}
+
 # Application version
 VERSION_MAJOR = 1
 VERSION_MINOR = 0
@@ -34,9 +37,6 @@ APP_NAME = "MoESchools"
 
 # Build string for UI (format: major.minor, e.g., "1.0")
 BUILD_STR = f"{VERSION_MAJOR}.{VERSION_MINOR:01d}"
-
-# Column type mappings (all columns default to string if not specified here)
-COLUMN_TYPES = {col: "numeric" for col in NUMERIC_COLUMNS}
 
 # Default pagination settings (can be changed in the UI)
 DEFAULT_LIMIT_PER_PAGE = 1000       # rows
