@@ -6,7 +6,7 @@
 
 # ------------------------------- Imports -------------------------------
 import os # for os.path, os.makedirs
-import re # for sanitising filenamespip
+import re # for sanitising filenames
 import json # for parsing JSON responses
 import logging # for logging (duh!)
 import subprocess # for opening folders
