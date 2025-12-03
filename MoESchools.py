@@ -48,20 +48,42 @@ ROLL_DATA_START_COLUMN = 'AY'       # First column with funding year level data
 ROLL_DATA_END_COLUMN = 'BM'         # Last column with funding year level data
 ROLL_DATA_START_YEAR = 2010         # First available year in roll data
 
-FIELDS = [ # this is ordered
-    "School_Id","Org_Name","Telephone","Fax","Email","Contact1_Name","URL",
-    "Add1_Line1","Add1_Suburb","Add1_City","Add2_Line1","Add2_Suburb",
-    "Add2_City","Add2_Postal_Code","Authority","Territorial_Authority",
-    "Regional_Council","General_Electorate","Māori_Electorate","Ward",
-    "Latitude","Longitude","EQi_Index","Roll_Date","Total","European",
-    "Māori","Pacific","Asian","MELAA","Other","International","Status",
-    "DateSchoolOpened",
-]
+FIELDS = [ # this is ordered from the API results
+    "School_Id",
+    "Authority",
+    "Org_Type",
+    "Org_Name",
+    "Add1_Line1",
+    "Add1_Suburb",
+    "Add1_City",
+    "Add2_Line1",
+    "Add2_Suburb",
+    "Add2_City",
+    "Telephone", # Phone
+    "Email", # School Email
+    "Contact1_Name", # Principal
+    "Email", # Principal Email
+    "Add2_Postal_Code", # Post Code
+    "Fax",
+    "EQi_Index", # Decile
+    "Definition",
+    "Territorial_Authority" # Territorial Authority
+    "Regional_Council", # Region
+    "General_Electorate", # General Electorate
+    "Māori_Electorate", # Maori Electorate
+    ]
 
 # Field aliases for export (maps internal field name to export column name)
 # Customize these to rename columns in CSV/Excel output. If not specified, original field name is used.
 FIELD_ALIASES = {
-    "School_Id": "MoEID",
+    "School_Id": "Number",
+    "Org_Type": "Type",
+    "EQi_Index": "Decile",
+    "Org_Name": "Name",
+    "Add1_Line1": "Location Address",
+    "Add1_Suburb": "Location Suburb",
+    "Add1_City": "Location City",
+
 }
  
 # ------------------------------ Logging -----------------------------
@@ -105,7 +127,7 @@ def make_logger(text_widget, level_name="INFO"):
     return logger
 
 # -------------------------- Fetch & transform -------------------------
-# Makes any blank null missing values into '-' for SMS import requirement
+# Makes any blank null missing values into '-' for import requirement
 def normalize_value(val):
     if val is None:
         return "-"
