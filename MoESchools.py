@@ -6,7 +6,7 @@
 
 # ------------------------------- Imports -------------------------------
 import os # for os.path, os.makedirs
-import re # for sanitising filenames
+import re # for sanitising filenamespip
 import json # for parsing JSON responses
 import logging # for logging (duh!)
 import subprocess # for opening folders
@@ -379,6 +379,7 @@ class App(tk.Tk):
         # Layout
         frm = ttk.Frame(self, padding=12)
         frm.pack(fill="both", expand=True)
+        frm.grid_columnconfigure(2, minsize=110) ##make third column wider for buttons TODO: make this not hardcoded
 
         # Resource is hardcoded, show read-only label
         ttk.Label(frm, text="Resource ID").grid(row=0, column=0, sticky="w")
@@ -396,7 +397,7 @@ class App(tk.Tk):
 
         # School Roll Data file (required)
         ttk.Label(frm, text="School Roll Data file (required):").grid(row=3, column=0, sticky="w", pady=(6,0))
-        ttk.Entry(frm, textvariable=self.var_roll_data_file, width=60).grid(row=3, column=1, sticky="we", padx=6, pady=(6,0))
+        ttk.Entry(frm, textvariable=self.var_roll_data_file, width=60).grid(row=3, column=1, sticky="w", padx=6, pady=(6,0))
         ttk.Button(frm, text="Browse...", command=self.browse_roll_data_file).grid(row=3, column=2, sticky="w", pady=(6,0))
         ttk.Button(frm, text="ℹ", command=self.show_roll_data_info, width=3).grid(row=3, column=2, sticky="e", pady=(6,0))
 
