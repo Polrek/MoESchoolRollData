@@ -16,6 +16,11 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext # for UI widgets
 import requests # for HTTP requests
 import pandas as pd # for data manipulation and Excel export
 
+
+# --------------------------- Proxy Handler ----------------------------
+
+
+
 # ----------------------------- Constants ------------------------------
 
 # MoE resource
