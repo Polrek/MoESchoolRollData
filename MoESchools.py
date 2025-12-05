@@ -12,12 +12,39 @@ import logging # for logging (duh!)
 import subprocess # for opening folders
 from time import sleep, strftime # for API call pacing and timestamped log filenames
 import tkinter as tk # for UI
-from tkinter import ttk, filedialog, messagebox, scrolledtext # for UI widgets
+from tkinter import ttk, filedialog, messagebox, scrolledtext, simpledialog # for UI widgets
 import requests # for HTTP requests
 import pandas as pd # for data manipulation and Excel export
+from urllib.parse import urlparse, quote # for password handing
 
 # --------------------------- Proxy Handler ----------------------------
 
+
+def _get_env_proxy_url() -> str | None:
+    """Return the proxy URL from HTTPS_PROXY or HTTP_PROXY env if present."""
+    return os.environ.get('HTTPS_PROXY') or os.environ.get('HTTP_PROXY') or None
+
+def _prompt_proxy_credentials(parent) -> tuple[str, str] | None:
+    """Securely prompt (masked) for proxy credentials. Returns (user, pass) or None if cancelled."""
+    user = simpledialog.askstring("Proxy authentication", "Proxy username:", parent=parent)
+    if user is None:
+        return None
+    pwd = simpledialog.askstring("Proxy authentication", "Proxy password:", show="*", parent=parent)
+    if pwd is None:
+        return None
+    return user, pwd
+
+def _build_authenticated_proxies(base_proxy_url: str, username: str, password: str) -> dict | None:
+    """
+    Build a Requests proxies dict using env proxy as base, injecting URL-encoded credentials.
+    Example final form: http://username:password@proxy:port
+    """
+    if not base_proxy_url:
+        return None
+    p = urlparse(base_proxy_url)
+    auth = f"{quote(username)}:{quote(password)}"  # percent-encode to handle ?, :, @, etc.
+    hostport = f"{p.hostname}:{p.port}" if p.port else p.hostname
+    proxy = f"{p.scheme}://{auth}@{hostport}"
 
 
 # ----------------------------- Constants ------------------------------
@@ -34,7 +61,7 @@ COLUMN_TYPES = {col: "numeric" for col in NUMERIC_COLUMNS}
 
 # Application version
 VERSION_MAJOR = 1
-VERSION_MINOR = 0
+VERSION_MINOR = 1
 
 # Application short name used for default filenames
 APP_NAME = "MoESchools"
@@ -151,14 +178,58 @@ def fetch_all_projected_records(resource_id: str,
                                 limit_per_page: int,
                                 timeout: float,
                                 pause: float,
-                                logger: logging.Logger) -> list:
+                                logger: logging.Logger,
+                                parent_window=None) -> list:
     session = requests.Session()
+
+    session.trust_env = True  # first attempt uses system/ENV proxy settings
+
+    
+    def _get_with_optional_proxy(params):
+        try:
+            return session.get(MOE_DATASTORE_URL, params=params, timeout=timeout)
+        except requests.exceptions.ProxyError as pe:
+            # Common corporate proxies surface 407 via a ProxyError tunnel failure
+            # e.g., "Tunnel connection failed: 407 Proxy Authentication Required"
+            if parent_window is None:
+                raise
+            text = str(pe)
+            need_auth = ("407" in text) or ("Proxy Authentication Required" in text)
+            if not need_auth:
+                raise
+
+            creds = _prompt_proxy_credentials(parent_window)
+            if not creds:
+                raise  # user cancelled
+
+            base = _get_env_proxy_url()
+            proxies = _build_authenticated_proxies(base, creds[0], creds[1])
+            if not proxies:
+                raise
+
+            # Use only the explicit proxies and ignore env to avoid conflicts
+            session.trust_env = False            # ignore env now; we manage proxies explicitly
+            session.proxies.update(proxies)      # do NOT log these
+            return session.get(MOE_DATASTORE_URL, params=params, timeout=timeout)
+
 
     # Fetch a single page
     def fetch_page(offset: int, limit: int):
         params = {"resource_id": resource_id, "limit": limit, "offset": offset}
         logger.debug(f"GET {MOE_DATASTORE_URL} params={params}")
-        resp = session.get(MOE_DATASTORE_URL, params=params, timeout=timeout)
+        resp = _get_with_optional_proxy(params)
+        
+        if resp.status_code == 407 and parent_window is not None:
+            # explicit 407 came back (some proxies forward it as a regular HTTP response)
+            creds = _prompt_proxy_credentials(parent_window)
+            if creds:
+                base = _get_env_proxy_url()
+                proxies = _build_authenticated_proxies(base, creds[0], creds[1])
+                if proxies:
+                    session.trust_env = False
+                    session.proxies.update(proxies)
+                    resp = session.get(MOE_DATASTORE_URL, params=params, timeout=timeout)
+
         logger.debug(f"HTTP {resp.status_code}")
         resp.raise_for_status()
         return resp.json()
@@ -629,6 +700,7 @@ This field is REQUIRED to generate exports."""
                 timeout=timeout,
                 pause=pause,
                 logger=logger,
+                parent_window=self
             )
             df = pd.DataFrame(rows, columns=FIELDS)
             
