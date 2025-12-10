@@ -1,0 +1,15 @@
+# Ignore the local MoESchools script that may contain local configuration
+MoESchools.py
+
+# Typical Python ignores
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+env/
+
+# Ignore exported / large data assets
+assets/*.csv
+assets/*.zip
